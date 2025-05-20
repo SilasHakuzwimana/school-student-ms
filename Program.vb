@@ -20,7 +20,7 @@ Module Program
 
     ' UI Elements
     Private Const DOUBLE_LINE As String = "═══════════════════════════════════════"
-    Private Const SINGLE_LINE As String = "───────────────────────────────────────-───────────────────────────────────────-───────────────────────────────────────-"
+    Private Const SINGLE_LINE As String = "───────────────────────────────────────-───────────────────────────────────────-─────────────────---"
 
     ' ╔══════════════════ Helper Functions ══════════════════╗
 
@@ -64,8 +64,12 @@ Module Program
     End Sub
 
     Sub PressAnyKey()
-        DisplayInfo(vbCrLf & "Press any key to continue...")
-        Console.ReadKey()
+        ' Clear the current line completely
+        Console.Write($"{vbCr}{New String(" "c, Console.WindowWidth - 1)}{vbCr}")
+
+        ' Then write the message
+        DisplayInfo("Press any key to continue...")
+        Console.ReadKey(True) ' True prevents the key from appearing on the screen
     End Sub
 
     Function GetValidInput(prompt As String, Optional isRequired As Boolean = True) As String
@@ -164,14 +168,19 @@ Module Program
     Sub AnimateLoading(message As String, duration As Integer)
         Dim frames() As String = {"|", "/", "-", "\"}
         Dim startTime As DateTime = DateTime.Now
+        Dim frameIndex As Integer = 0
+
+        ' Calculate total characters to overwrite (for clean erasing)
+        Dim cleanLength As Integer = message.Length + 2 ' +2 for space + frame
 
         While (DateTime.Now - startTime).TotalMilliseconds < duration
-            For Each frame In frames
-                Console.Write($"\r{message} {frame}")
-                Thread.Sleep(100)
-            Next
+            Console.Write($"{vbCr}{message} {frames(frameIndex)}")
+            Thread.Sleep(100)
+            frameIndex = (frameIndex + 1) Mod frames.Length
         End While
-        Console.WriteLine()
+
+        ' Clean up the line after animation
+        Console.Write($"{vbCr}{New String(" "c, cleanLength)}{vbCr}")
     End Sub
 
     ' ╔══════════════════ Database Functions ══════════════════╗
@@ -253,7 +262,7 @@ Module Program
                     Using reader = cmd.ExecuteReader()
                         If reader.HasRows Then
                             Console.ForegroundColor = HEADER_COLOR
-                            Console.WriteLine("{0,-5} {1,-18} {2,-25} {3,-15} {4,-5} {5,-15} {6}",
+                            Console.WriteLine("{0,-5} {1,-18} {2,-25} {3,-19} {4,-3} {5,-9} {6}",
                                 "ID", "Name", "Email", "Phone", "Age", "Reg. No", "Created At")
                             Console.WriteLine(SINGLE_LINE)
                             Console.ResetColor()
@@ -266,9 +275,9 @@ Module Program
                                     Console.ForegroundColor = INFO_COLOR
                                 End If
 
-                                Console.WriteLine("{0,-5} {1,-18} {2,-25} {3,-15} {4,-5} {5,-15} {6}",
+                                Console.WriteLine("{0,-5} {1,-18} {2,-25} {3,-19} {4,-5} {5,-9} {6}",
                                     reader("id"), reader("name"), reader("email"),
-                                    reader("tel"), reader("age"), reader("reg_number"), reader("created_at"))
+                                    reader("tel"), reader("age"), reader("reg_number"), reader("created_at").ToShortDateString())
 
                                 Console.ResetColor()
                             End While
@@ -625,7 +634,7 @@ Module Program
 
                         Using reader = cmd.ExecuteReader()
                             Console.ForegroundColor = HEADER_COLOR
-                            Console.WriteLine("{0,-5} {1,-18} {2,-25} {3,-15} {4,-5} {5,-15} {6}",
+                            Console.WriteLine("{0,-5} {1,-18} {2,-25} {3,-15} {4,-5} {5,-14} {6}",
                                 "ID", "Name", "Email", "Phone", "Age", "Reg. No", "Created At")
                             Console.WriteLine(SINGLE_LINE)
                             Console.ResetColor()
@@ -638,9 +647,10 @@ Module Program
                                     Console.ForegroundColor = INFO_COLOR
                                 End If
 
-                                Console.WriteLine("{0,-5} {1,-18} {2,-25} {3,-15} {4,-5} {5,-15} {6}",
+                                Console.WriteLine("{0,-5} {1,-18} {2,-25} {3,-15} {4,-5} {5,-14} {6}",
                                     reader("id"), reader("name"), reader("email"),
-                                    reader("tel"), reader("age"), reader("reg_number"), reader("created_at"))
+                                    reader("tel"), reader("age"), reader("reg_number"), reader("created_at").ToShortDateString()
+                                    )
 
                                 Console.ResetColor()
                             End While
@@ -764,7 +774,7 @@ Module Program
                     Using reader = cmd.ExecuteReader()
                         If reader.HasRows Then
                             Console.ForegroundColor = HEADER_COLOR
-                            Console.WriteLine("{0,-5} {1,-18} {2,-25} {3,-15} {4,-5} {5,-15} {6}",
+                            Console.WriteLine("{0,-5} {1,-18} {2,-25} {3,-19} {4,-5} {5,-9} {6}",
                                 "ID", "Name", "Email", "Phone", "Age", "Reg. No", "Created At")
                             Console.WriteLine(SINGLE_LINE)
                             Console.ResetColor()
@@ -777,9 +787,9 @@ Module Program
                                     Console.ForegroundColor = INFO_COLOR
                                 End If
 
-                                Console.WriteLine("{0,-5} {1,-18} {2,-35} {3,-22} {4,-5} {5,-15} {6}",
+                                Console.WriteLine("{0,-5} {1,-18} {2,-25} {3,-19} {4,-5} {5,-9} {6}",
                                     reader("id"), reader("name"), reader("email"),
-                                    reader("tel"), reader("age"), reader("reg_number"), reader("created_at"))
+                                    reader("tel"), reader("age"), reader("reg_number"), reader("created_at").ToShortDateString())
 
                                 Console.ResetColor()
                             End While
@@ -878,27 +888,6 @@ Module Program
                             reg_number VARCHAR(50) NOT NULL,
                             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                         )"
-
-                    Using cmd As New MySqlCommand(createTableSql, conn)
-                        cmd.ExecuteNonQuery()
-                        DisplaySuccess("Students table created successfully.")
-
-                        ' Insert sample data
-                        DisplayInfo("Adding sample data...")
-
-                        Dim sampleDataSql As String = "
-                            INSERT INTO students (name, email, tel, age, reg_number) VALUES
-                            ('John Smith', 'john.smith@example.com', '+11234567890', 20, 'REG001'),
-                            ('Jane Doe', 'jane.doe@example.com', '+10987654321', 22, 'REG002'),
-                            ('Michael Johnson', 'michael.j@example.com', '+11122334455', 19, 'REG003'),
-                            ('Sarah Williams', 'sarah.w@example.com', '+11555666777', 21, 'REG004'),
-                            ('David Brown', 'david.b@example.com', '+12233445566', 23, 'REG005')"
-
-                        Using sampleCmd As New MySqlCommand(sampleDataSql, conn)
-                            sampleCmd.ExecuteNonQuery()
-                            DisplaySuccess("Sample data added successfully.")
-                        End Using
-                    End Using
                 Else
                     DisplayInfo("Students table already exists.")
                 End If
@@ -922,7 +911,7 @@ Module Program
     Sub Main()
         ' Set console properties
         Console.Title = "Student Management System"
-        Console.SetWindowSize(100, 30)
+        Console.SetWindowSize(100, 50)
         Console.OutputEncoding = System.Text.Encoding.UTF8
 
         Try
@@ -961,6 +950,8 @@ Module Program
             Dim choice As Integer
 
             Do
+                Console.Clear()
+                Console.SetWindowSize(100, 30)
                 DisplayHeader("🎓 STUDENT MANAGEMENT SYSTEM 🎓")
 
                 Console.WriteLine("Menu Options:")
